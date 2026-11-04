@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#07130f" />
+  <meta name="description" content="Spore Genesis — a hand-painted evolution survival game. Eat, mutate, build a den, breed a lineage and become a myth." />
+  <title>Spore Genesis — Evolution Survival</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Spore Genesis game world"></canvas>
+
+    <div id="hud" class="hud">
+      <div class="hud-left">
+        <div class="profile card">
+          <div class="avatar-wrap"><canvas id="avatar" width="120" height="120"></canvas></div>
+          <div class="pinfo">
+            <div class="pname"><span id="player-name">Nyx</span><span id="gen" class="gen">GEN 1</span></div>
+            <div id="stage-name" class="stage-name">Hatchling</div>
+            <div class="xpbar"><i id="xp-fill"></i></div>
+            <div class="xp-label"><span id="xp-text">0 / 70</span><span id="stage-num">Stage I</span></div>
+          </div>
+        </div>
+        <div class="vitals card">
+          <div class="bar hp"><span class="ico">♥</span><div class="track"><i id="hp-fill"></i></div><b id="hp-text">100</b></div>
+          <div class="bar stamina"><span class="ico">⚡</span><div class="track"><i id="stamina-fill"></i></div><b id="stamina-text">100</b></div>
+          <div class="bar food"><span class="ico">🍖</span><div class="track"><i id="food-fill"></i></div><b id="food-text">100</b></div>
+          <div class="bar water"><span class="ico">💧</span><div class="track"><i id="water-fill"></i></div><b id="water-text">100</b></div>
+        </div>
+        <div class="lineage card hidden" id="lineage-card">
+          <span>👑 <b id="lineage-gen">Gen 1</b></span>
+          <span class="lineage-bonus" id="lineage-bonus">+0% legacy</span>
+          <span class="heir-count" id="heir-count">0 heirs</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="mapcard card">
+          <canvas id="minimap" width="180" height="180"></canvas>
+          <div class="maptop"><span id="biome-name">Verdant Meadow</span><span id="clock">08:20</span></div>
+          <div class="mapbottom"><span id="weather">☀ Clear</span><span id="day">Day 1</span></div>
+        </div>
+        <div class="dna card">
+          <span class="dna-icon">🧬</span>
+          <b id="dna-count">0</b>
+          <span class="dna-label">DNA</span>
+          <button id="btn-mutations" class="mini">Evolve <kbd>M</kbd></button>
+        </div>
+      </div>
+
+      <div id="quest" class="quest card">
+        <div class="qtop"><span>OBJECTIVE</span><span id="quest-count">1/11</span></div>
+        <div id="quest-title">First Bites</div>
+        <div id="quest-text">Eat three berries, mushrooms or carcasses.</div>
+        <div class="qprog"><i id="quest-fill"></i></div>
+        <div class="qhint" id="quest-hint"></div>
+      </div>
+
+      <div id="toasts" class="toasts" aria-live="polite"></div>
+      <div id="prompt" class="prompt hidden"><span class="key">E</span><span id="prompt-text">Interact</span></div>
+
+      <div id="hotbar" class="hotbar">
+        <div class="slot"><kbd>SPACE</kbd><span>Bite</span></div>
+        <div class="slot"><kbd>E</kbd><span>Interact</span></div>
+        <div class="slot ability"><kbd>Q</kbd><span id="hotbar-ability">Roar</span><i id="ability-cd" class="cd"></i></div>
+        <div class="slot"><kbd>SHIFT</kbd><span>Sprint</span></div>
+        <div class="slot"><kbd>B</kbd><span>Den</span></div>
+      </div>
+
+      <div class="menubtns">
+        <button id="btn-build" title="Build & Den (B)" aria-label="Build and den">⌂<kbd>B</kbd></button>
+        <button id="btn-map" title="World Map (Tab)" aria-label="World map">🗺<kbd>TAB</kbd></button>
+        <button id="btn-journal" title="Journal (J)" aria-label="Journal">📖<kbd>J</kbd></button>
+        <button id="btn-sound" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+        <button id="btn-pause" title="Pause (Esc)" aria-label="Pause">⏸</button>
+      </div>
+
+      <div id="mobile-controls" class="mobile-controls">
+        <div id="joystick" aria-label="Movement joystick"><div id="stick"></div></div>
+        <div class="touch-actions">
+          <button id="btn-touch-sprint" class="touch small" aria-label="Sprint">»</button>
+          <button id="btn-touch-ability" class="touch small" aria-label="Special ability">✦</button>
+          <button id="btn-touch-interact" class="touch mid" aria-label="Interact">E</button>
+          <button id="btn-touch-attack" class="touch attack" aria-label="Bite">Bite</button>
+        </div>
+      </div>
+
+      <div id="low-health" class="low-health"></div>
+    </div>
+
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div id="panel" class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 id="panel-title">Evolution</h2>
+            <p id="panel-sub">Spend DNA to reshape your body.</p>
+          </div>
+          <button id="panel-close" aria-label="Close panel">✕</button>
+        </div>
+        <div id="panel-body" class="panel-body"></div>
+      </div>
+    </div>
+
+    <div id="death" class="overlay hidden">
+      <div class="death-card">
+        <div class="eyebrow">THE WILD REMEMBERS</div>
+        <h2>You Perished</h2>
+        <p id="death-text">A shade stalker found you in the dark.</p>
+        <div id="death-stats" class="death-stats"></div>
+        <button id="btn-respawn" class="primary">Return to the world</button>
+      </div>
+    </div>
+
+    <div id="title" class="overlay title">
+      <div class="spores" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="title-inner">
+        <div class="eyebrow">EAT · MUTATE · BUILD · BREED · BECOME</div>
+        <h1>SPORE<span>GENESIS</span></h1>
+        <p class="lede">A living world of genes and teeth. Start as a soft hatchling.<br />End as something the forest tells stories about.</p>
+        <div class="title-features">
+          <span>🧬 30 mutating genes</span>
+          <span>🏕 Den building</span>
+          <span>🥚 Generational breeding</span>
+          <span>🌍 Living map</span>
+        </div>
+        <div class="title-actions">
+          <button id="btn-start" class="primary big">Start</button>
+          <button id="btn-new" class="ghost">New Game</button>
+        </div>
+        <div class="title-foot" id="title-foot">WASD move · Shift sprint · Space bite · E interact · M evolve · B build</div>
+      </div>
+      <div class="title-credit">A handcrafted evolution survival game · works with keyboard or touch</div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/game.js"></script>
+</body>
+</html>
