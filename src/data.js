@@ -108,6 +108,8 @@ export const GENES = [
     blurb: 'A second stomach, then a third.', effect: (r) => `+${r * 18}% food from everything you eat` },
   { id: 'watersacs', name: 'Water Sacs', cat: 'meta', icon: '◌', max: 2, cost: 18, stage: 1, color: '#ffd479',
     blurb: 'Store water in pleated folds of skin.', effect: (r) => `-${r * 17}% thirst` },
+  { id: 'adrenal', name: 'Adrenal Glands', cat: 'meta', icon: '⚡', max: 2, cost: 26, stage: 1, color: '#ffd479',
+    blurb: 'A second pair of glands floods your limbs with readiness.', effect: (r) => `+${r * 35}% stamina regeneration` },
   { id: 'toxin', name: 'Toxin Filter', cat: 'meta', icon: '☣', max: 1, cost: 24, stage: 1, color: '#ffd479',
     blurb: 'A liver that argues with poison and wins.', effect: () => 'Eat any mushroom safely · resist venom' },
   { id: 'photo', name: 'Photosynthesis', cat: 'meta', icon: '☀', max: 2, cost: 30, stage: 2, color: '#ffd479',
@@ -276,6 +278,7 @@ export function deriveStats(genes, stage, lineage = 0) {
   const regen = r('regen') * 0.35 + r('ascendant') * 0.2;
   const foodValue = 1 + r('digestion') * 0.18;
   const thirstRate = 1 - r('watersacs') * 0.17;
+  const staminaRegen = 1 + r('adrenal') * 0.35;
   const photo = r('photo') * 0.06;
   const spikes = r('spikes') * 0.2;
   const detectMod = 1 - r('camouflage') * 0.28;
@@ -283,7 +286,7 @@ export function deriveStats(genes, stage, lineage = 0) {
   const ability = r('electric') ? 'pulse' : r('venom') ? 'cloud' : r('burrow') ? 'burrow' : r('wings') ? 'dash' : 'roar';
   return {
     maxHp, speed, damage, armor, vision, regen, foodValue, thirstRate, photo, spikes, detectMod,
-    attackRange, size, ability,
+    attackRange, size, ability, staminaRegen,
     venom: r('venom') * 2.5,
     electric: r('electric'),
     lineage: lin

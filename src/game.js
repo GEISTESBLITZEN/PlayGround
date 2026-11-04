@@ -18,6 +18,7 @@ const SAVE_KEY = 'spore-genesis-save-v1';
 const SAVE_VERSION = 1;
 const CELL = 64;
 const MAPRES = 100;
+const plural = (n, one, many) => (n === 1 ? one : many);
 
 const ABILITY_INFO = {
   roar: { name: 'Terrifying Roar', icon: '📣', cd: 26 },
@@ -159,6 +160,7 @@ export class Game {
     this.started = false;
     this.paused = false;
     this.dead = false;
+    this.victoryOpen = false;
     this.hasSave = false;
     this.panel = null;
     this.introShown = false;
@@ -235,6 +237,7 @@ export class Game {
     });
     $('hud').classList.add('hidden');
     $('death').classList.add('hidden');
+    $('victory').classList.add('hidden');
     let loaded = false;
     try { loaded = this.loadGame(); } catch { loaded = false; }
     if (!loaded) this.newGame(false);
@@ -250,6 +253,7 @@ export class Game {
     this.started = false;
     this.paused = false;
     this.dead = false;
+    this.victoryOpen = false;
     this.panel = null;
     this.keys.clear();
     this.joystick = { x: 0, y: 0, active: false };
@@ -289,6 +293,7 @@ export class Game {
     this.lightning = 0;
     this.hasSave = false;
     this.introShown = false;
+    $('victory').classList.add('hidden');
     const spawn = this.world.findSpawn();
     this.spawnPoint = { x: spawn.x, y: spawn.y };
     const hue = 90 + Math.floor(Math.random() * 160);
@@ -606,7 +611,7 @@ export class Game {
     dt = Math.min(0.05, dt);
     this.lastFrame = now;
     this.now = now;
-    if (!this.dead && !this.paused && !this.panel) {
+    if (!this.dead && !this.paused && !this.panel && !this.victoryOpen) {
       if (!this.started) this.updateIdle(dt);
       else this.update(dt);
     }
@@ -835,7 +840,7 @@ export class Game {
       speed *= 1.56;
       p.stamina = Math.max(0, p.stamina - 18 * dt);
     } else {
-      p.stamina = Math.min(100, p.stamina + 14 * dt);
+      p.stamina = Math.min(100, p.stamina + 14 * stats.staminaRegen * dt);
     }
     if (deep) speed *= gills ? 0.9 : 0.42;
     else if (wet) speed *= gills ? 0.96 : 0.66;
@@ -1521,6 +1526,40 @@ export class Game {
         this.saveGame();
       } else break;
     }
+    if (this.questIndex >= QUESTS.length) this.triggerVictory();
+  }
+
+  triggerVictory() {
+    if (!this.started || this.dead || this.victoryOpen || this.flags.victory) return;
+    this.flags.victory = true;
+    this.victoryOpen = true;
+    this.paused = true;
+    const p = this.player;
+    const text = $('victory-text');
+    if (text) text.textContent = `${p.name} has become Ascendant — more myth than animal. The lineage you began will outlast the seasons, and the forest will tell its stories for generations.`;
+    const stats = $('victory-stats');
+    if (stats) {
+      stats.innerHTML = `
+        <div><b>${this.day}</b>${plural(this.day, 'Day', 'Days')}</div>
+        <div><b>${this.stats.kills}</b>${plural(this.stats.kills, 'Kill', 'Kills')}</div>
+        <div><b>${this.heirs.length}</b>${plural(this.heirs.length, 'Heir', 'Heirs')}</div>
+        <div><b>${this.generation}</b>${plural(this.generation, 'Generation', 'Generations')}</div>`;
+    }
+    $('prompt').classList.add('hidden');
+    $('victory').classList.remove('hidden');
+    this.ringBurst(p.x, p.y, '#ffd479', 250, 4);
+    this.particlesBurst(p.x, p.y, 40, '#ffe9b5', { speed: 160, life: 1.4, size: 3, grav: -30 });
+    this.sound.evolve();
+    this.saveGame();
+  }
+
+  closeVictory() {
+    if (!this.victoryOpen) return;
+    this.victoryOpen = false;
+    this.paused = false;
+    $('victory').classList.add('hidden');
+    this.lastFrame = performance.now() / 1000;
+    this.toast('The world is yours. Keep exploring, hunting, and building.', 'gold', 4200);
   }
 
   questHint() {
@@ -1721,10 +1760,10 @@ export class Game {
     $('prompt').classList.add('hidden');
     $('death-text').textContent = this.deathCause;
     $('death-stats').innerHTML = `
-      <div><b>${this.day}</b>Days</div>
-      <div><b>${this.stats.kills}</b>Kills</div>
-      <div><b>${this.stats.breeds}</b>Heirs</div>
-      <div><b>${this.generation}</b>Generation</div>`;
+      <div><b>${this.day}</b>${plural(this.day, 'Day', 'Days')}</div>
+      <div><b>${this.stats.kills}</b>${plural(this.stats.kills, 'Kill', 'Kills')}</div>
+      <div><b>${this.stats.breeds}</b>${plural(this.stats.breeds, 'Heir', 'Heirs')}</div>
+      <div><b>${this.generation}</b>${plural(this.generation, 'Generation', 'Generations')}</div>`;
     const den = this.den;
     $('btn-respawn').textContent = den ? 'Wake at your den' : 'Return to the world';
     $('death').classList.remove('hidden');
@@ -3842,6 +3881,8 @@ export class Game {
     }
     const respawn = $('btn-respawn');
     if (respawn) respawn.addEventListener('click', () => this.respawn());
+    const cont = $('btn-continue');
+    if (cont) cont.addEventListener('click', () => this.closeVictory());
 
     const panelBody = $('panel-body');
     if (panelBody) {
@@ -3903,6 +3944,13 @@ export class Game {
     const moveCodes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'Space'];
     window.addEventListener('keydown', (e) => {
       const code = e.code;
+      if (this.victoryOpen) {
+        if (code === 'Escape' || code === 'Enter' || code === 'Space') {
+          e.preventDefault();
+          this.closeVictory();
+        }
+        return;
+      }
       if (code === 'Escape') {
         e.preventDefault();
         if (this.panel) this.closePanel();

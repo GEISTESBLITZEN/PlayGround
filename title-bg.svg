@@ -35,8 +35,6 @@
       <stop offset=".32" stop-color="#d9ffb0" stop-opacity=".75"/>
       <stop offset="1" stop-color="#baffc9" stop-opacity="0"/>
     </radialGradient>
-    <filter id="blur8"><feGaussianBlur stdDeviation="8"/></filter>
-    <filter id="blur18"><feGaussianBlur stdDeviation="18"/></filter>
   </defs>
 
   <rect width="1440" height="900" fill="#06120d"/>
@@ -44,7 +42,7 @@
   <rect width="1440" height="900" fill="url(#glowWater)"/>
 
   <!-- distant haze -->
-  <ellipse cx="900" cy="360" rx="520" ry="240" fill="url(#haze)" filter="url(#blur18)"/>
+  <ellipse cx="900" cy="360" rx="520" ry="240" fill="url(#haze)" opacity=".8"/>
 
   <!-- water basin -->
   <path d="M690 -40 C 720 120 660 250 710 370 C 760 500 700 610 760 760 L 820 940 L 1500 940 L 1500 -40 Z" fill="url(#water)"/>
@@ -132,9 +130,11 @@
     <circle cx="1120" cy="332" r="2" opacity=".35"/>
     <circle cx="780" cy="120" r="1.6" opacity=".4"/>
   </g>
-  <g fill="#bfffe0" filter="url(#blur8)" opacity=".5">
-    <circle cx="360" cy="260" r="6"/>
-    <circle cx="244" cy="640" r="5"/>
+  <g fill="#bfffe0" opacity=".25">
+    <circle cx="360" cy="260" r="12"/>
+    <circle cx="360" cy="260" r="6" opacity=".7"/>
+    <circle cx="244" cy="640" r="10"/>
+    <circle cx="244" cy="640" r="5" opacity=".7"/>
   </g>
 
   <!-- vignette -->

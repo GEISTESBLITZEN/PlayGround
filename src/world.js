@@ -163,18 +163,21 @@ export class World {
     const rng = new RNG((this.seed ^ (cx * 73856093) ^ (cy * 19349663)) >>> 0);
     const cells = 64;
     const step = CHUNK / cells;
+    const pad = 1;
+    const grid = cells + pad * 2;
     const waterCells = [];
     // Paint the base terrain at a modest resolution, then upscale it with
-    // smoothing. This keeps biome edges soft instead of showing a hard grid.
+    // smoothing. One extra cell of bleed on every side keeps the colour
+    // gradients continuous across chunk borders (no visible seams).
     const base = document.createElement('canvas');
-    base.width = cells;
-    base.height = cells;
+    base.width = grid;
+    base.height = grid;
     const bctx = base.getContext('2d');
 
-    for (let gy = 0; gy < cells; gy++) {
-      for (let gx = 0; gx < cells; gx++) {
-        const x = ox + gx * step;
-        const y = oy + gy * step;
+    for (let gy = 0; gy < grid; gy++) {
+      for (let gx = 0; gx < grid; gx++) {
+        const x = ox + (gx - pad) * step;
+        const y = oy + (gy - pad) * step;
         const key = this.biomeAt(x + step * 0.5, y + step * 0.5);
         bctx.fillStyle = this.cellColor(key, x, y);
         bctx.fillRect(gx, gy, 1, 1);
@@ -183,7 +186,7 @@ export class World {
     }
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(base, 0, 0, CHUNK, CHUNK);
+    ctx.drawImage(base, -pad * step, -pad * step, grid * step, grid * step);
 
     // soft blotches to break up the grid
     for (let i = 0; i < 130; i++) {
@@ -201,8 +204,8 @@ export class World {
 
     // shoreline foam
     for (const [gx, gy, key] of waterCells) {
-      const x = gx * step;
-      const y = gy * step;
+      const x = (gx - pad) * step;
+      const y = (gy - pad) * step;
       const nx = ox + x + step / 2;
       const ny = oy + y + step / 2;
       let touches = false;
@@ -461,7 +464,9 @@ export class World {
       for (let cx = minx; cx <= maxx; cx++) {
         if (cx < 0 || cy < 0 || cx * CHUNK >= this.size || cy * CHUNK >= this.size) continue;
         const c = this.getChunk(cx, cy);
-        ctx.drawImage(c.canvas, cx * CHUNK, cy * CHUNK);
+        // One pixel of overlap hides the antialiased seam that appears when
+        // adjacent canvases are composited at a fractional camera offset.
+        ctx.drawImage(c.canvas, cx * CHUNK - 1, cy * CHUNK - 1, CHUNK + 2, CHUNK + 2);
       }
     }
   }
